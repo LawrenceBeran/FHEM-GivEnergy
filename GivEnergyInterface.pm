@@ -8,6 +8,9 @@ use JSON;
 use Data::Dumper;
 use Carp qw(croak);
 
+# See https://portal.givenergy.cloud/docs/api/v1#introduction for details on the GivEnergy API
+
+
 sub new        # constructor, this method makes an object that belongs to class Number
 {
     my $class = shift;          # $_[0] contains the class name
@@ -162,15 +165,10 @@ sub getCommunicationDevices($) {
     return $respGetDataJSON;
 }
 
-sub getSystemDataLatest($$) {
+sub getLatestSystemData($$) {
     my ($self, $inverterSerialNumber) = @_;
 
-    my $postData = {
-            page => '1'
-        ,   pageSize => '15'
-    };
-
-    my $requestGetData = HTTP::Request->new('GET', $self->_getURL('inverter/'.$inverterSerialNumber.'/system-data/latest'), $self->_getHeaders(), to_json($postData));
+    my $requestGetData = HTTP::Request->new('GET', $self->_getURL('inverter/'.$inverterSerialNumber.'/system-data/latest'), $self->_getHeaders());
     my $respGetData = $self->{ua}->request($requestGetData);
 
     if (!$respGetData->is_success) {
@@ -182,8 +180,23 @@ sub getSystemDataLatest($$) {
     $self->_log($self->{logAPIResponsesLevel}, Dumper($respGetDataJSON));
 
     return $respGetDataJSON;
-
 }
 
+sub getLatestMeterData($$) {
+    my ($self, $inverterSerialNumber) = @_;
+
+    my $requestGetData = HTTP::Request->new('GET', $self->_getURL('inverter/'.$inverterSerialNumber.'/meter-data/latest'), $self->_getHeaders());
+    my $respGetData = $self->{ua}->request($requestGetData);
+
+    if (!$respGetData->is_success) {
+        $self->_log(1, $respGetData->decoded_content);
+        return undef;
+    }
+
+    my $respGetDataJSON = decode_json($respGetData->decoded_content);
+    $self->_log($self->{logAPIResponsesLevel}, Dumper($respGetDataJSON));
+
+    return $respGetDataJSON;
+}
 
 1;
