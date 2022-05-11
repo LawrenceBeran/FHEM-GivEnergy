@@ -25,7 +25,7 @@ sub new        # constructor, this method makes an object that belongs to class 
     # expect to need to override this check.
     for my $required (qw{ token  }) {
         croak "Required parameter '$required' not passed to '$class' constructor"
-            unless exists $params{$required};  
+            unless exists $params{$required};
     }
 
     # initialise class members, these can be overriden by class initialiser.
@@ -34,7 +34,7 @@ sub new        # constructor, this method makes an object that belongs to class 
     # initialize all attributes by passing arguments to accessor methods.
     for my $attrib ( keys %params ) {
 
-        croak "Invalid parameter '$attrib' passed to '$class' constructor"
+        croak "Invalid parameter '$attrib' passed to '$class' constructor" 
             unless $self->can( $attrib );
 
         $self->$attrib( $params{$attrib} );
@@ -61,24 +61,33 @@ sub DESTROY($)
 }
 
 # Attribute accessor method.
-sub token($$) 
-{
+sub token($$) {
     my ($self, $value) = @_;
-    if (@_ == 2) 
-    {
+    if (@_ == 2) {
         $self->{token} = $value;
     }
     return $self->{token};
 }
 
-sub _getURL($$)
+#############################################
+
+sub _log($$$)
 {
+    my ( $self, $loglevel, $text ) = @_;
+
+    my $xline = (caller(0))[2];
+    my $xsubroutine = (caller(1))[3];
+    my $sub = (split( ':', $xsubroutine ))[2];
+
+    main::Log3("GivEnergyInterface", $loglevel, "$sub.$xline ".$text);
+}
+
+sub _getURL($$) {
     my ($self, $path) = @_;
     return $self->{URL}.$self->{version}.'/'.$path;
 }
 
-sub _getHeaders($)
-{
+sub _getHeaders($) {
     my ($self) = @_;
     my $header = [  'Content-Type' => 'application/json'
                 ,   'Accept' => 'application/json'
@@ -87,8 +96,51 @@ sub _getHeaders($)
     return $header;
 }
 
-sub getCommunicationDevices($)
-{
+sub getSites($) {
+    my ($self) = @_;
+
+    my $postData = {
+            page => '1'
+        ,   pageSize => '15'
+    };
+
+    my $requestGetData = HTTP::Request->new('GET', $self->_getURL('site'), $self->_getHeaders(), to_json($postData));
+    my $respGetData = $self->{ua}->request($requestGetData);
+
+    if (!$respGetData->is_success) {
+        $self->_log(1, $respGetData->decoded_content);
+        return undef;
+    }
+
+    my $respGetDataJSON = decode_json($respGetData->decoded_content);
+    $self->_log($self->{logAPIResponsesLevel}, Dumper($respGetDataJSON));
+
+    return $respGetDataJSON;
+}
+
+sub getSiteById($$) {
+    my ($self, $siteId) = @_;
+
+    my $postData = {
+            page => '1'
+        ,   pageSize => '15'
+    };
+
+    my $requestGetData = HTTP::Request->new('GET', $self->_getURL('site/'.$siteId), $self->_getHeaders(), to_json($postData));
+    my $respGetData = $self->{ua}->request($requestGetData);
+
+    if (!$respGetData->is_success) {
+        $self->_log(1, $respGetData->decoded_content);
+        return undef;
+    }
+
+    my $respGetDataJSON = decode_json($respGetData->decoded_content);
+    $self->_log($self->{logAPIResponsesLevel}, Dumper($respGetDataJSON));
+
+    return $respGetDataJSON;
+}
+
+sub getCommunicationDevices($) {
     my ($self) = @_;
 
     my $postData = {
@@ -107,5 +159,31 @@ sub getCommunicationDevices($)
     my $respGetDataJSON = decode_json($respGetData->decoded_content);
     $self->_log($self->{logAPIResponsesLevel}, Dumper($respGetDataJSON));
 
-    return $respGetDataJSON
+    return $respGetDataJSON;
 }
+
+sub getSystemDataLatest($$) {
+    my ($self, $inverterSerialNumber) = @_;
+
+    my $postData = {
+            page => '1'
+        ,   pageSize => '15'
+    };
+
+    my $requestGetData = HTTP::Request->new('GET', $self->_getURL('inverter/'.$inverterSerialNumber.'/system-data/latest'), $self->_getHeaders(), to_json($postData));
+    my $respGetData = $self->{ua}->request($requestGetData);
+
+    if (!$respGetData->is_success) {
+        $self->_log(1, $respGetData->decoded_content);
+        return undef;
+    }
+
+    my $respGetDataJSON = decode_json($respGetData->decoded_content);
+    $self->_log($self->{logAPIResponsesLevel}, Dumper($respGetDataJSON));
+
+    return $respGetDataJSON;
+
+}
+
+
+1;
