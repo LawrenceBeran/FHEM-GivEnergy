@@ -32,6 +32,16 @@ if (defined($tokenString))
 my $givEnergyClient = GivEnergyInterface->new(token => $token);
 
 
+my $respAccountInfo = $givEnergyClient->getAccountInformation();
+if ($respAccountInfo) {
+
+    my $account  = $respAccountInfo->{data};
+
+    my $respAccountDongles = $givEnergyClient->getAccountDongles($account->{id});
+}
+
+
+
 # Get all sites
 my $respSites = $givEnergyClient->getSites();
 foreach my $site (@{$respSites->{data}}) {

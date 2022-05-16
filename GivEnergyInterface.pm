@@ -99,104 +99,69 @@ sub _getHeaders($) {
     return $header;
 }
 
-sub getSites($) {
-    my ($self) = @_;
+sub _get($$$$) {
+    my ($self, $path, $postData, $page) = @_;
 
-    my $postData = {
-            page => '1'
-        ,   pageSize => '15'
-    };
+    if ($page) {
+        $postData->{page} = $page;
+        $postData->{pageSize} = 15;
+    }
 
-    my $requestGetData = HTTP::Request->new('GET', $self->_getURL('site'), $self->_getHeaders(), to_json($postData));
+    my $requestGetData = HTTP::Request->new('GET', $self->_getURL($path), $self->_getHeaders(), $postData ? to_json($postData) : undef);
     my $respGetData = $self->{ua}->request($requestGetData);
 
     if (!$respGetData->is_success) {
-        $self->_log(1, $respGetData->decoded_content);
+        $self->_log(1, $path.' - '.$respGetData->decoded_content);
         return undef;
     }
 
     my $respGetDataJSON = decode_json($respGetData->decoded_content);
-    $self->_log($self->{logAPIResponsesLevel}, Dumper($respGetDataJSON));
+    $self->_log($self->{logAPIResponsesLevel}, $path.' - '.Dumper($respGetDataJSON));
 
     return $respGetDataJSON;
+}
+
+sub getSites($) {
+    my ($self) = @_;
+
+    return $self->_get('site', undef, 1);
 }
 
 sub getSiteById($$) {
     my ($self, $siteId) = @_;
 
-    my $postData = {
-            page => '1'
-        ,   pageSize => '15'
-    };
-
-    my $requestGetData = HTTP::Request->new('GET', $self->_getURL('site/'.$siteId), $self->_getHeaders(), to_json($postData));
-    my $respGetData = $self->{ua}->request($requestGetData);
-
-    if (!$respGetData->is_success) {
-        $self->_log(1, $respGetData->decoded_content);
-        return undef;
-    }
-
-    my $respGetDataJSON = decode_json($respGetData->decoded_content);
-    $self->_log($self->{logAPIResponsesLevel}, Dumper($respGetDataJSON));
-
-    return $respGetDataJSON;
+    return $self->_get('site/'.$siteId, undef, 1);
 }
 
 sub getCommunicationDevices($) {
     my ($self) = @_;
 
-    my $postData = {
-            page => '1'
-        ,   pageSize => '15'
-    };
-
-    my $requestGetData = HTTP::Request->new('GET', $self->_getURL('communication-device'), $self->_getHeaders(), to_json($postData));
-    my $respGetData = $self->{ua}->request($requestGetData);
-
-    if (!$respGetData->is_success) {
-        $self->_log(1, $respGetData->decoded_content);
-        return undef;
-    }
-
-    my $respGetDataJSON = decode_json($respGetData->decoded_content);
-    $self->_log($self->{logAPIResponsesLevel}, Dumper($respGetDataJSON));
-
-    return $respGetDataJSON;
+    return $self->_get('communication-device', undef, 1);
 }
 
 sub getLatestSystemData($$) {
     my ($self, $inverterSerialNumber) = @_;
 
-    my $requestGetData = HTTP::Request->new('GET', $self->_getURL('inverter/'.$inverterSerialNumber.'/system-data/latest'), $self->_getHeaders());
-    my $respGetData = $self->{ua}->request($requestGetData);
-
-    if (!$respGetData->is_success) {
-        $self->_log(1, $respGetData->decoded_content);
-        return undef;
-    }
-
-    my $respGetDataJSON = decode_json($respGetData->decoded_content);
-    $self->_log($self->{logAPIResponsesLevel}, Dumper($respGetDataJSON));
-
-    return $respGetDataJSON;
+    return $self->_get('inverter/'.$inverterSerialNumber.'/system-data/latest', undef, undef);
 }
 
 sub getLatestMeterData($$) {
     my ($self, $inverterSerialNumber) = @_;
 
-    my $requestGetData = HTTP::Request->new('GET', $self->_getURL('inverter/'.$inverterSerialNumber.'/meter-data/latest'), $self->_getHeaders());
-    my $respGetData = $self->{ua}->request($requestGetData);
-
-    if (!$respGetData->is_success) {
-        $self->_log(1, $respGetData->decoded_content);
-        return undef;
-    }
-
-    my $respGetDataJSON = decode_json($respGetData->decoded_content);
-    $self->_log($self->{logAPIResponsesLevel}, Dumper($respGetDataJSON));
-
-    return $respGetDataJSON;
+    return $self->_get('inverter/'.$inverterSerialNumber.'/meter-data/latest', undef, undef);
 }
+
+sub getAccountInformation($) {
+    my ($self) = @_;
+
+    return $self->_get('account', undef, undef);
+}
+
+sub getAccountDongles($$) {
+    my ($self, $accountId) = @_;
+
+    return $self->_get('account/'.$accountId.'/devices', undef, 1);
+}
+
 
 1;
