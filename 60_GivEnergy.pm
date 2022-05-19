@@ -26,7 +26,7 @@ sub GivEnergy_Initialize($) {
 	# Provider
 	$hash->{Clients}  = "GivEnergy_.*";
 	my %mc = (
-		"1:GivEnergy_Inverter" => "^GivEnergy_Inverter",		# The start of the parent Dispatch & inverter Parse message must contain this string to match this inverter.
+		"1:GivEnergy_ProductInverter" => "^GivEnergy_ProductInverter",		# The start of the parent Dispatch & inverter Parse message must contain this string to match this inverter.
 #		"2:HiveHome_Action" => "^HiveHome_Action",		
 #		"3:HiveHome_Product" => "^HiveHome_Product",		
 	);
@@ -66,12 +66,7 @@ sub GivEnergy_Define($$) {
 	# Create a timer to get object details
 	InternalTimer(gettimeofday()+1, "GivEnergy_GetUpdate", $hash, 0);
 	
-#    if ($init_done) 
-    {
-        $attr{$name}{room}  = 'GivEnergy';
-#        $attr{$name}{devStateIcon} = 'Connected:10px-kreis-gruen@green Disconnected:message_attention@orange .*:message_attention@red';
-#        $attr{$name}{icon} = 'rc_HOME';
-    }
+    $attr{$name}{room}  = 'GivEnergy';
 
 	Log(1, "GivEnergy_Define: exit");
 
@@ -108,32 +103,23 @@ sub GivEnergy_GetUpdate() {
 
 ############################################################################
 
-sub _givEnergy_ProcessSiteProductInverter($$$) {
-	my ($hash, $givEnergyClient, $productInverter) = @_;
+sub _givEnergy_ProcessSiteProductInverter($$$$) {
+	my ($hash, $givEnergyClient, $siteId, $productInverter) = @_;
 	Log(1, "_givEnergy_ProcessSiteProductInverter: entry");
 
-#    print("\n  Inverter:          ".$productInverter->{serial}."\n");
-#    print('    Status:          '.$productInverter->{status}."\n");
-#    print('    Model:           '.$productInverter->{info}->{model}."\n");
-#    print('    Battery type:    '.$productInverter->{info}->{battery_type}."\n");
-#    print('    Warranty:        '.$productInverter->{warranty}->{type}.", expiry - ".$productInverter->{warranty}->{expiry_date}."\n");
-#    print('    Commission date: '.$productInverter->{commission_date}."\n");
-#    print('    Last online:     '.$productInverter->{last_online}."\n");
-#    print('    Last updated:    '.$productInverter->{last_updated}."\n");
-#    print("    Firmware versions:\n");
-#    foreach my $firmware (keys %{$productInverter->{firmware_version}}) {
-#        print('      '.$firmware.':            '.$productInverter->{firmware_version}->{$firmware}."\n");
-#    }
-    # TODO: connections!    
-
     my $systemData = $givEnergyClient->getLatestSystemData($productInverter->{serial});
+    my $meterData = $givEnergyClient->getLatestMeterData($productInverter->{serial});
+
     if (!$systemData) {
         Log(1, "_givEnergy_ProcessSiteProductInverter: Failed to get latest system data for inverter - ".$productInverter->{serial});
     } else {
+        $productInverter->{systemData} = $systemData->{data};
         my $data = $systemData->{data};
+
 
 #        print('      Time:               '.$data->{time}."\n");
 #        print('      Consumption:        '.$data->{consumption}."\n");
+
 
 
         my $dataInverter = $data->{inverter};
@@ -182,6 +168,7 @@ sub _givEnergy_ProcessSiteProductInverter($$$) {
     if (!$meterData) {
         Log(1, "_givEnergy_ProcessSiteProductInverter: Failed to get latest meter data for inverter - ".$productInverter->{serial});
     } else {
+        $productInverter->{meterData} = $meterData->{data};
         my $data = $meterData->{data};
 
         Log(1, "_givEnergy_ProcessSiteProductInverter: getLatestMeterData (got)");
@@ -211,6 +198,9 @@ sub _givEnergy_ProcessSiteProductInverter($$$) {
 
     }
 
+    my $productInverterString = encode_json($productInverter);
+    Dispatch($hash, "GivEnergy_ProductInverter,".$productInverter->{serial}.",".$siteId.",".$productInverterString, undef);
+
 	Log(1, "_givEnergy_ProcessSiteProductInverter: exit");
 }
 
@@ -232,7 +222,7 @@ sub _givEnergy_ProcessSite($$$) {
     foreach my $product (@{$site->{products}}) {
         if (lc($product->{name}) eq 'inverters') {
             foreach my $productInverter (@{$product->{data}}) {
-                _givEnergy_ProcessSiteProductInverter($hash, $givEnergyClient, $productInverter);
+                _givEnergy_ProcessSiteProductInverter($hash, $givEnergyClient, $site->{id}, $productInverter);
             }
         } else {
             # TODO: what else could we get here, something else to process!
