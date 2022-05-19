@@ -142,7 +142,7 @@ sub GivEnergy_ProductInverter_Parse($$$)
             }
             if ($systemData->{battery}) {
                 readingsBulkUpdate($shash, "batteryPower", $systemData->{battery}->{power});
-                readingsBulkUpdate($shash, "batteryPercentage", $systemData->{battery}->{percentage});
+                readingsBulkUpdate($shash, "batteryPercentage", $systemData->{battery}->{percent});
             }
             if ($systemData->{solar}) {
                 readingsBulkUpdate($shash, "solarPower", $systemData->{solar}->{power});
