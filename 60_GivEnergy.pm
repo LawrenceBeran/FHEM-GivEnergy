@@ -8,10 +8,10 @@ use JSON;
 # DEFINE myGivEnergy GivEnergy <token>
 
 sub _getGivEnergyInterface($) {
-	my ($hash) = @_;
+    my ($hash) = @_;
 
     if (!defined($hash->{GivEnergy}{interface})) {
-       	Log(3, "_getGivEnergyInterface: Creating new GivEnergyInterface object!");
+        Log(3, "_getGivEnergyInterface: Creating new GivEnergyInterface object!");
 
         $hash->{GivEnergy}{interface} = GivEnergyInterface->new(token => $hash->{token});
     }
@@ -31,17 +31,17 @@ sub GivEnergy_Initialize($) {
 #		"3:HiveHome_Product" => "^HiveHome_Product",		
 	);
 	$hash->{MatchList} = \%mc;
-    $hash->{WriteFn}  = "GivEnergy_Write";    
+    $hash->{WriteFn}  = "GivEnergy_Write";
 
 	#Consumer
 	$hash->{DefFn}    = "GivEnergy_Define";
 	$hash->{UndefFn}  = "GivEnergy_Undefine";
-	
+
     $hash->{GivEnergy}{client} = undef;
     $hash->{helper}->{sendQueue} = [];
 
 	Log(1, "GivEnergy_Initialize: exit");
-	return undef;	
+	return undef;
 }
 
 sub GivEnergy_Define($$) {
@@ -65,7 +65,7 @@ sub GivEnergy_Define($$) {
 
 	# Create a timer to get object details
 	InternalTimer(gettimeofday()+1, "GivEnergy_GetUpdate", $hash, 0);
-	
+
     $attr{$name}{room}  = 'GivEnergy';
 
 	Log(1, "GivEnergy_Define: exit");
@@ -93,7 +93,7 @@ sub GivEnergy_GetUpdate() {
 	Log(1, "GivEnergy_GetUpdate: enter");
 
     GivEnergy_UpdateNodes($hash, undef);
-	
+
 	InternalTimer(gettimeofday()+$hash->{INTERVAL}, "GivEnergy_GetUpdate", $hash, 0);
 
 	Log(1, "GivEnergy_GetUpdate: exit");
@@ -161,17 +161,12 @@ sub _givEnergy_ProcessSiteProductInverter($$$$) {
         }
     }
 
-    Log(1, "_givEnergy_ProcessSiteProductInverter: getLatestMeterData ");
-
-
-    my $meterData = $givEnergyClient->getLatestMeterData($productInverter->{serial});
     if (!$meterData) {
         Log(1, "_givEnergy_ProcessSiteProductInverter: Failed to get latest meter data for inverter - ".$productInverter->{serial});
     } else {
         $productInverter->{meterData} = $meterData->{data};
         my $data = $meterData->{data};
 
-        Log(1, "_givEnergy_ProcessSiteProductInverter: getLatestMeterData (got)");
 #        print('      Time:          '.$data->{time}."\n");
 
 #        my $today = $data->{today};

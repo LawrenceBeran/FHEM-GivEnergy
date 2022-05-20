@@ -15,7 +15,7 @@ sub GivEnergy_ProductInverter_Initialize($)
 #	$hash->{SetFn}    	= "GivEnergy_ProductInverter_Set";	
 	$hash->{ParseFn}	= "GivEnergy_ProductInverter_Parse";
 	$hash->{Match}		= "^GivEnergy_ProductInverter";			# The start of the Dispatch/Parse message must contain this string to match this device.
-	$hash->{AttrFn}		= "GivEnergy_ProductInverter_Attr";
+#	$hash->{AttrFn}		= "GivEnergy_ProductInverter_Attr";
 	$hash->{AttrList}	= "IODev " 
 #						. "autoAlias:1,0 "
 						. $readingFnAttributes;
@@ -48,8 +48,8 @@ sub GivEnergy_ProductInverter_Define($$)
 
 	Log(1, "GivEnergy_ProductInverter_Define serial '${serialId}'");
 	$hash->{serial} 	= $serialId;
-	$hash->{STATE}      = 'Disconnected';
-	
+	$hash->{STATE}		= 'Disconnected';
+
 	$modules{GivEnergy_ProductInverter}{defptr}{$serialId} = $hash;
 
 	# Tell this Hive device to point to its parent HiveHome
@@ -61,9 +61,7 @@ sub GivEnergy_ProductInverter_Define($$)
 		($hash->{IODev}{InitNode})->($hash->{IODev}, 1);
 
 		$attr{$name}{room}  = 'GivEnergy';
-	} 
-    else 
-    {
+	} else {
 		# TODO: Cant properly define the object!
 	}
 
@@ -115,13 +113,13 @@ sub GivEnergy_ProductInverter_Parse($$$)
 
 	if (lc($productInverter->{serial}) eq lc($serialId))
 	{
-        $shash->{model}             = $productInverter->{info}->{model};
-        $shash->{batteryType}       = $productInverter->{info}->{battery_type};
-        $shash->{warrentyType}      = $productInverter->{warranty}->{type};
-        $shash->{warrentyExpiry}    = $productInverter->{warranty}->{expiry_date};
-        $shash->{commissionDate}    = $productInverter->{commission_date};
-        $shash->{lastOnline}        = $productInverter->{last_online};
-        $shash->{lastUpdated}       = $productInverter->{last_updated};
+		$shash->{model}             = $productInverter->{info}->{model};
+		$shash->{batteryType}       = $productInverter->{info}->{battery_type};
+		$shash->{warrentyType}      = $productInverter->{warranty}->{type};
+		$shash->{warrentyExpiry}    = $productInverter->{warranty}->{expiry_date};
+		$shash->{commissionDate}    = $productInverter->{commission_date};
+		$shash->{lastOnline}        = $productInverter->{last_online};
+		$shash->{lastUpdated}       = $productInverter->{last_updated};
 
 #        foreach my $firmware (keys %{$productInverter->{firmware_version}}) {
 #            print('      '.$firmware.':            '.$productInverter->{firmware_version}->{$firmware}."\n");
@@ -130,24 +128,24 @@ sub GivEnergy_ProductInverter_Parse($$$)
 
 		readingsBeginUpdate($shash);
 
-        my $systemData = $productInverter->{systemData};
-        if ($systemData) {
+		my $systemData = $productInverter->{systemData};
+		if ($systemData) {
 
-            readingsBulkUpdate($shash, "consumption", $systemData->{consumption});
-            if ($systemData->{inverter}) {
-                readingsBulkUpdate($shash, "inverterPower", $systemData->{inverter}->{power});
-            }
-            if ($systemData->{grid}) {
-                readingsBulkUpdate($shash, "gridPower", $systemData->{grid}->{power});
-            }
-            if ($systemData->{battery}) {
-                readingsBulkUpdate($shash, "batteryPower", $systemData->{battery}->{power});
-                readingsBulkUpdate($shash, "batteryPercentage", $systemData->{battery}->{percent});
-            }
-            if ($systemData->{solar}) {
-                readingsBulkUpdate($shash, "solarPower", $systemData->{solar}->{power});
-            }
-        }
+		readingsBulkUpdate($shash, "consumption", $systemData->{consumption});
+		if ($systemData->{inverter}) {
+			readingsBulkUpdate($shash, "inverterPower", $systemData->{inverter}->{power});
+		}
+		if ($systemData->{grid}) {
+			readingsBulkUpdate($shash, "gridPower", $systemData->{grid}->{power});
+		}
+		if ($systemData->{battery}) {
+			readingsBulkUpdate($shash, "batteryPower", $systemData->{battery}->{power});
+			readingsBulkUpdate($shash, "batteryPercentage", $systemData->{battery}->{percent});
+		}
+		if ($systemData->{solar}) {
+			readingsBulkUpdate($shash, "solarPower", $systemData->{solar}->{power});
+		}
+	}
 
 #        readingsBulkUpdateIfChanged($shash, "online", $node->{readings}->{online} ? "Online" : "Offline");
 
@@ -172,7 +170,7 @@ sub GivEnergy_ProductInverter_Parse($$$)
 
 	Log(5, "GivEnergy_ProductInverter_Parse: exit");
 
-	return $shash->{name};
+	return $shash->{NAME};
 }
 
 1;
