@@ -114,83 +114,12 @@ sub _givEnergy_ProcessSiteProductInverter($$$$) {
         Log(1, "_givEnergy_ProcessSiteProductInverter: Failed to get latest system data for inverter - ".$productInverter->{serial});
     } else {
         $productInverter->{systemData} = $systemData->{data};
-        my $data = $systemData->{data};
-
-
-#        print('      Time:               '.$data->{time}."\n");
-#        print('      Consumption:        '.$data->{consumption}."\n");
-
-
-
-        my $dataInverter = $data->{inverter};
-#        print("      Inverter:\n");
-#        print('        Power:            '.$dataInverter->{power}."\n");
-#        print('        Temperature:      '.$dataInverter->{temperature}."\n");
-#        print('        EPS power:        '.$dataInverter->{eps_power}."\n");
-#        print('        Output frequency: '.$dataInverter->{output_frequency}."\n");
-#        print('        Output voltage:   '.$dataInverter->{output_voltage}."\n");
-
-        my $dataGrid = $data->{grid};
-        if ($dataGrid) {
-#           print("      Grid:\n");
-#           print('        Power:            '.$dataGrid->{power}."\n");
-#           print('        Current:          '.$dataGrid->{current}."\n");
-#           print('        Frequency:        '.$dataGrid->{frequency}."\n");
-#           print('        Voltage:          '.$dataGrid->{voltage}."\n");
-        }
-
-        my $dataBattery = $data->{battery};
-        if ($dataBattery) {
-#           print("      Battery:\n");
-#           print('        Power:            '.$dataBattery->{power}."\n");
-#           print('        Temperature:      '.$dataBattery->{temperature}."\n");
-#           print('        Percentage:       '.$dataBattery->{percent}."\n");
-        }
-
-        my $dataSolar = $data->{solar};
-        if ($dataSolar) {
-#           print("      Solar:\n");
-#           print("        Power:            ".$dataSolar->{power}."\n");
-
-            foreach my $array (@{$dataSolar->{arrays}}) {
-#               print('        Array:            '.$array->{array}."\n");
-#               print('          Power:          '.$array->{power}."\n");
-#               print('          Current:        '.$array->{current}."\n");
-#               print('          Voltage:        '.$array->{voltage}."\n");
-            }
-        }
     }
 
     if (!$meterData) {
         Log(1, "_givEnergy_ProcessSiteProductInverter: Failed to get latest meter data for inverter - ".$productInverter->{serial});
     } else {
         $productInverter->{meterData} = $meterData->{data};
-        my $data = $meterData->{data};
-
-#        print('      Time:          '.$data->{time}."\n");
-
-#        my $today = $data->{today};
-#        print("      Today:  \n");
-#        print('        Consumption: '.$today->{consumption}."\n");
-#        print('        Solar:       '.$today->{solar}."\n");
-#        print("        Grid:      \n");
-#        print('          Import:    '.$today->{grid}->{import}."\n");
-#        print('          Export:    '.$today->{grid}->{export}."\n");
-#        print("        Battery:    \n");
-#        print('          Charge:    '.$today->{battery}->{charge}."\n");
-#        print('          Discharge: '.$today->{battery}->{discharge}."\n");
-
-#        my $total = $data->{total};
-#        print("      Total:  \n");
-#        print('        Consumption: '.$total->{consumption}."\n");
-#        print('        Solar:       '.$total->{solar}."\n");
-#        print("        Grid:      \n");
-#        print('          Import:    '.$total->{grid}->{import}."\n");
-#        print('          Export:    '.$total->{grid}->{export}."\n");
-#        print("        Battery:    \n");
-#        print('          Charge:    '.$total->{battery}->{charge}."\n");
-#        print('          Discharge: '.$total->{battery}->{discharge}."\n");
-
     }
 
     my $productInverterString = encode_json($productInverter);

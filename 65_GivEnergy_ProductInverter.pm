@@ -83,6 +83,16 @@ sub GivEnergy_ProductInverter_Undefine($$)
 	return undef;
 }
 
+sub reportMeterDataReading($$$) {
+	my ($shash, $tag, $data) = @_;
+
+	readingsBulkUpdate($shash, $tag."Consumption", $data->{consumption});
+	readingsBulkUpdate($shash, $tag."Solar", $data->{solar});
+	readingsBulkUpdate($shash, $tag."GridImport", $data->{grid}->{import});
+	readingsBulkUpdate($shash, $tag."GridExport", $data->{grid}->{export});
+	readingsBulkUpdate($shash, $tag."BatteryCharge", $data->{battery}->{charge});
+	readingsBulkUpdate($shash, $tag."BatteryDischarge", $data->{battery}->{discharge});
+}
 
 sub GivEnergy_ProductInverter_Parse($$$)
 {
@@ -121,57 +131,68 @@ sub GivEnergy_ProductInverter_Parse($$$)
 		$shash->{lastOnline}        = $productInverter->{last_online};
 		$shash->{lastUpdated}       = $productInverter->{last_updated};
 
-#        foreach my $firmware (keys %{$productInverter->{firmware_version}}) {
-#            print('      '.$firmware.':            '.$productInverter->{firmware_version}->{$firmware}."\n");
-#        }
+        foreach my $firmware (keys %{$productInverter->{firmware_version}}) {
+			$shash->{'firmware'.$firmware."Version"} = $productInverter->{firmware_version}->{$firmware};
+        }
         # TODO: connections!  
 
 		readingsBeginUpdate($shash);
 
 		my $systemData = $productInverter->{systemData};
 		if ($systemData) {
+			if (readingsBulkUpdateIfChanged($shash, "systemDataTime", $systemData->{time})) {
+				readingsBulkUpdate($shash, "consumption", $systemData->{consumption});
+				if ($systemData->{inverter}) {
+					readingsBulkUpdate($shash, "inverterPower", $systemData->{inverter}->{power});
+					readingsBulkUpdate($shash, "inverterEPSPower", $systemData->{inverter}->{eps_power});
+					readingsBulkUpdate($shash, "inverterOutputFrequency", $systemData->{inverter}->{output_frequency});
+					readingsBulkUpdate($shash, "inverterTemperature", $systemData->{inverter}->{temperature});
+					readingsBulkUpdate($shash, "inverterOutputVoltage", $systemData->{inverter}->{output_voltage});
+				}
+				if ($systemData->{grid}) {
+					readingsBulkUpdate($shash, "gridPower", $systemData->{grid}->{power});
+					readingsBulkUpdate($shash, "gridCurrent", $systemData->{grid}->{current});
+					readingsBulkUpdate($shash, "gridFrequency", $systemData->{grid}->{frequency});
+					readingsBulkUpdate($shash, "gridVoltage", $systemData->{grid}->{voltage});
+				}
+				if ($systemData->{battery}) {
+					readingsBulkUpdate($shash, "batteryPower", $systemData->{battery}->{power});
+					readingsBulkUpdate($shash, "batteryPercentage", $systemData->{battery}->{percent});
+					readingsBulkUpdate($shash, "batteryTemperature", $systemData->{battery}->{temperature});
+				}
+				if ($systemData->{solar}) {
+					readingsBulkUpdate($shash, "solarPower", $systemData->{solar}->{power});
+					foreach my $array (@{$systemData->{solar}->{arrays}}) {
+						my $arrayName = "solarArray".$array->{array};
+						readingsBulkUpdate($shash, $arrayName."Power", $array->{power});
+						readingsBulkUpdate($shash, $arrayName."Current", $array->{current});
+						readingsBulkUpdate($shash, $arrayName."Voltage", $array->{voltage});
+					}
+				}
+			}
+		}
 
-		readingsBulkUpdate($shash, "consumption", $systemData->{consumption});
-		if ($systemData->{inverter}) {
-			readingsBulkUpdate($shash, "inverterPower", $systemData->{inverter}->{power});
+		my $meterData = $productInverter->{meterData};
+		if ($meterData) {
+			if (readingsBulkUpdateIfChanged($shash, "meterDataTime", $meterData->{time})) {
+				reportMeterDataReading($shash, "today", $meterData->{today});
+				reportMeterDataReading($shash, "total", $meterData->{total});
+			}
 		}
-		if ($systemData->{grid}) {
-			readingsBulkUpdate($shash, "gridPower", $systemData->{grid}->{power});
-		}
-		if ($systemData->{battery}) {
-			readingsBulkUpdate($shash, "batteryPower", $systemData->{battery}->{power});
-			readingsBulkUpdate($shash, "batteryPercentage", $systemData->{battery}->{percent});
-		}
-		if ($systemData->{solar}) {
-			readingsBulkUpdate($shash, "solarPower", $systemData->{solar}->{power});
-		}
-	}
-
-#        readingsBulkUpdateIfChanged($shash, "online", $node->{readings}->{online} ? "Online" : "Offline");
-
 		$myState = $productInverter->{status};
 
-#        if (defined($node->{readings}->{battery})) 
-#        {
-#            readingsBulkUpdateIfChanged($shash, "battery", $node->{readings}->{battery});
-#			$myState .= ' (low battery)' if (int($node->{readings}->{battery}) <= 20);
-#        }
+		readingsBulkUpdateIfChanged($shash, "state", $myState);
 
-#        if (defined($node->{readings}->{signal})) 
-#        {
-#            readingsBulkUpdateIfChanged($shash, "signal", $node->{readings}->{signal});
-#			$myState .= ' (poor signal)' if (int($node->{readings}->{signal}) <= 20);
-#        }
-
-		readingsBulkUpdate($shash, "state", $myState);
 		readingsEndUpdate($shash, 1);
-
 	}
 
 	Log(5, "GivEnergy_ProductInverter_Parse: exit");
 
 	return $shash->{NAME};
 }
+
+
+
 
 1;
 
