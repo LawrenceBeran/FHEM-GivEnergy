@@ -7,15 +7,23 @@ use HTTP::Request;
 use JSON;
 use Data::Dumper;
 use Carp qw(croak);
+use Readonly;
 
 # See https://portal.givenergy.cloud/docs/api/v1#introduction for details on the GivEnergy API
 
+# Common logging levels..
+Readonly my $LL_FATAL = 0;
+Readonly my $LL_ERROR = 1;
+Readonly my $LL_WARNING = 2;
+Readonly my $LL_INFO = 3;
+Readonly my $LL_DEBUG = 4;
+Readonly my $LL_TRACE = 5;
 
-sub new        # constructor, this method makes an object that belongs to class Number
-{
+
+sub new {       # constructor, this method makes an object that belongs to class Number
     my $class = shift;          # $_[0] contains the class name
 
-    croak "Illegal parameter list has odd number of values" 
+    croak 'Illegal parameter list has odd number of values' 
         if @_ % 2;
 
     my %params = @_;
@@ -37,7 +45,7 @@ sub new        # constructor, this method makes an object that belongs to class 
     # initialize all attributes by passing arguments to accessor methods.
     for my $attrib ( keys %params ) {
 
-        croak "Invalid parameter '$attrib' passed to '$class' constructor" 
+        croak "Invalid parameter '$attrib' passed to '$class' constructor"
             unless $self->can( $attrib );
 
         $self->$attrib( $params{$attrib} );
@@ -45,8 +53,8 @@ sub new        # constructor, this method makes an object that belongs to class 
 
     # Provide a value to the following to log all successfull API calls and responses at the log level defined in - $self->{infoLogLevel}
     # Set it to undef to not log all responses, errors are still logged
-    $self->{logAPIResponsesLevel} = 5;
-    $self->{infoLogLevel} = 4;
+    $self->{logAPIResponsesLevel} = $LL_TRACE;
+    $self->{infoLogLevel} = $LL_DEBUG;
 
     $self->{URL} = 'https://api.givenergy.cloud/';
     $self->{version} = 'v1';
@@ -60,7 +68,7 @@ sub DESTROY($)
 {
     my $self = shift;
 
-    $self->_log(5, "DESTROY - Enter");
+    $self->_log($LL_TRACE, 'DESTROY - Enter');
 }
 
 # Attribute accessor method.
@@ -74,15 +82,14 @@ sub token($$) {
 
 #############################################
 
-sub _log($$$)
-{
+sub _log($$$) {
     my ( $self, $loglevel, $text ) = @_;
 
     my $xline = (caller(0))[2];
     my $xsubroutine = (caller(1))[3];
     my $sub = (split( ':', $xsubroutine ))[2];
 
-    main::Log3("GivEnergyInterface", $loglevel, "$sub.$xline ".$text);
+    main::Log3('GivEnergyInterface', $loglevel, "${sub}.${xline} ${text}");
 }
 
 sub _getURL($$) {
@@ -100,25 +107,25 @@ sub _getHeaders($) {
 }
 
 sub _get($$$$) {
-    my ($self, $path, $postData, $page) = @_;
+    my ($self, $path, $post_data, $page) = @_;
 
     if ($page) {
-        $postData->{page} = $page;
-        $postData->{pageSize} = 15;
+        $post_data->{page} = $page;
+        $post_data->{pageSize} = 15;
     }
 
-    my $requestGetData = HTTP::Request->new('GET', $self->_getURL($path), $self->_getHeaders(), $postData ? to_json($postData) : undef);
-    my $respGetData = $self->{ua}->request($requestGetData);
+    my $request_getdata = HTTP::Request->new('GET', $self->_getURL($path), $self->_getHeaders(), $post_data ? to_json($post_data) : undef);
+    my $resp_getdata = $self->{ua}->request($request_getdata);
 
-    if (!$respGetData->is_success) {
-        $self->_log(1, $path.' - '.$respGetData->decoded_content);
+    if (!$resp_getdata->is_success) {
+        $self->_log(1, $path.' - '.$resp_getdata->decoded_content);
         return undef;
     }
 
-    my $respGetDataJSON = decode_json($respGetData->decoded_content);
-    $self->_log($self->{logAPIResponsesLevel}, $path.' - '.Dumper($respGetDataJSON));
+    my $resp_getdata_json = decode_json($resp_getdata->decoded_content);
+    $self->_log($self->{logAPIResponsesLevel}, $path.' - '.Dumper($resp_getdata_json));
 
-    return $respGetDataJSON;
+    return $resp_getdata_json;
 }
 
 sub getSites($) {
@@ -128,9 +135,9 @@ sub getSites($) {
 }
 
 sub getSiteById($$) {
-    my ($self, $siteId) = @_;
+    my ($self, $site_id) = @_;
 
-    return $self->_get('site/'.$siteId, undef, 1);
+    return $self->_get("site/'${site_id}", undef, 1);
 }
 
 sub getCommunicationDevices($) {
@@ -140,15 +147,15 @@ sub getCommunicationDevices($) {
 }
 
 sub getLatestSystemData($$) {
-    my ($self, $inverterSerialNumber) = @_;
+    my ($self, $inverter_serialnumber) = @_;
 
-    return $self->_get('inverter/'.$inverterSerialNumber.'/system-data/latest', undef, undef);
+    return $self->_get("inverter/${inverter_serialnumber}/system-data/latest", undef, undef);
 }
 
 sub getLatestMeterData($$) {
-    my ($self, $inverterSerialNumber) = @_;
+    my ($self, $inverter_serialnumber) = @_;
 
-    return $self->_get('inverter/'.$inverterSerialNumber.'/meter-data/latest', undef, undef);
+    return $self->_get("inverter/${inverter_serialnumber}/meter-data/latest", undef, undef);
 }
 
 sub getAccountInformation($) {
@@ -158,9 +165,9 @@ sub getAccountInformation($) {
 }
 
 sub getAccountDongles($$) {
-    my ($self, $accountId) = @_;
+    my ($self, $account_id) = @_;
 
-    return $self->_get('account/'.$accountId.'/devices', undef, 1);
+    return $self->_get("account/${account_id}/devices", undef, 1);
 }
 
 

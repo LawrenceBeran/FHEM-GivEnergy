@@ -4,6 +4,15 @@ use warnings;
 
 use GivEnergyInterface;
 use JSON;
+use Readonly;
+
+# Common logging levels..
+Readonly my $LL_FATAL = 0;
+Readonly my $LL_ERROR = 1;
+Readonly my $LL_WARNING = 2;
+Readonly my $LL_INFO = 3;
+Readonly my $LL_DEBUG = 4;
+Readonly my $LL_TRACE = 5;
 
 # DEFINE myGivEnergy GivEnergy <token>
 
@@ -11,7 +20,7 @@ sub _getGivEnergyInterface($) {
     my ($hash) = @_;
 
     if (!defined($hash->{GivEnergy}{interface})) {
-        Log(3, "_getGivEnergyInterface: Creating new GivEnergyInterface object!");
+        Log($LL_INFO, '_getGivEnergyInterface: Creating new GivEnergyInterface object!');
 
         $hash->{GivEnergy}{interface} = GivEnergyInterface->new(token => $hash->{token});
     }
@@ -21,33 +30,33 @@ sub _getGivEnergyInterface($) {
 sub GivEnergy_Initialize($) {
 	my ($hash) = @_;
 
-	Log(1, "GivEnergy_Initialize: enter");
+	Log($LL_TRACE, 'GivEnergy_Initialize: enter');
 
 	# Provider
-	$hash->{Clients}  = "GivEnergy_.*";
+	$hash->{Clients}  = 'GivEnergy_.*';
 	my %mc = (
-		"1:GivEnergy_ProductInverter" => "^GivEnergy_ProductInverter",		# The start of the parent Dispatch & inverter Parse message must contain this string to match this inverter.
-#		"2:HiveHome_Action" => "^HiveHome_Action",		
-#		"3:HiveHome_Product" => "^HiveHome_Product",		
+		'1:GivEnergy_ProductInverter' => '^GivEnergy_ProductInverter',    # The start of the parent Dispatch & inverter Parse message must contain this string to match this inverter.
+#		'2:HiveHome_Action' => '^HiveHome_Action',
+#		'3:HiveHome_Product' => '^HiveHome_Product',
 	);
 	$hash->{MatchList} = \%mc;
-    $hash->{WriteFn}  = "GivEnergy_Write";
+    $hash->{WriteFn}  = 'GivEnergy_Write';
 
 	#Consumer
-	$hash->{DefFn}    = "GivEnergy_Define";
-	$hash->{UndefFn}  = "GivEnergy_Undefine";
+	$hash->{DefFn}    = 'GivEnergy_Define';
+	$hash->{UndefFn}  = 'GivEnergy_Undefine';
 
     $hash->{GivEnergy}{client} = undef;
     $hash->{helper}->{sendQueue} = [];
 
-	Log(1, "GivEnergy_Initialize: exit");
+	Log($LL_TRACE, 'GivEnergy_Initialize: exit');
 	return undef;
 }
 
 sub GivEnergy_Define($$) {
 	my ($hash, $def) = @_;
 
-	Log(1, "GivEnergy_Define: enter");
+	Log($LL_TRACE, 'GivEnergy_Define: enter');
 
 	my ($name, $type, $token) = split(' ', $def);
 
@@ -64,11 +73,11 @@ sub GivEnergy_Define($$) {
 	$hash->{InitNode} = \&GivEnergy_UpdateNodes;
 
 	# Create a timer to get object details
-	InternalTimer(gettimeofday()+1, "GivEnergy_GetUpdate", $hash, 0);
+	InternalTimer(gettimeofday()+1, 'GivEnergy_GetUpdate', $hash, 0);
 
     $attr{$name}{room}  = 'GivEnergy';
 
-	Log(1, "GivEnergy_Define: exit");
+	Log($LL_TRACE, 'GivEnergy_Define: exit');
 
 	return undef;
 }
@@ -76,13 +85,13 @@ sub GivEnergy_Define($$) {
 sub GivEnergy_Undefine($$) {
 	my ($hash, $def) = @_;
 
-	Log(1, "GivEnergy_Undefine: enter");
+	Log($LL_TRACE, 'GivEnergy_Undefine: enter');
 
 	RemoveInternalTimer($hash);
 
 	$hash->{GivEnergy}{SessionId} = undef;
 
-	Log(1, "GivEnergy_Undefine: exit");
+	Log($LL_TRACE, 'GivEnergy_Undefine: exit');
 
 	return undef;
 }
@@ -90,13 +99,13 @@ sub GivEnergy_Undefine($$) {
 sub GivEnergy_GetUpdate() {
 	my ($hash) = @_;
 
-	Log(1, "GivEnergy_GetUpdate: enter");
+	Log($LL_TRACE, 'GivEnergy_GetUpdate: enter');
 
     GivEnergy_UpdateNodes($hash, undef);
 
-	InternalTimer(gettimeofday()+$hash->{INTERVAL}, "GivEnergy_GetUpdate", $hash, 0);
+	InternalTimer(gettimeofday()+$hash->{INTERVAL}, 'GivEnergy_GetUpdate', $hash, 0);
 
-	Log(1, "GivEnergy_GetUpdate: exit");
+	Log($LL_TRACE, 'GivEnergy_GetUpdate: exit');
 
 	return undef;
 }
@@ -104,33 +113,33 @@ sub GivEnergy_GetUpdate() {
 ############################################################################
 
 sub _givEnergy_ProcessSiteProductInverter($$$$) {
-	my ($hash, $givEnergyClient, $siteId, $productInverter) = @_;
-	Log(1, "_givEnergy_ProcessSiteProductInverter: entry");
+	my ($hash, $givenergy_client, $site_id, $product_inverter) = @_;
+	Log($LL_TRACE, '_givEnergy_ProcessSiteProductInverter: entry');
 
-    my $systemData = $givEnergyClient->getLatestSystemData($productInverter->{serial});
-    my $meterData = $givEnergyClient->getLatestMeterData($productInverter->{serial});
+    my $system_data = $givenergy_client->getLatestSystemData($product_inverter->{serial});
+    my $meter_data = $givenergy_client->getLatestMeterData($product_inverter->{serial});
 
     if (!$systemData) {
-        Log(1, "_givEnergy_ProcessSiteProductInverter: Failed to get latest system data for inverter - ".$productInverter->{serial});
+        Log($LL_ERROR, '_givEnergy_ProcessSiteProductInverter: Failed to get latest system data for inverter - '.$product_inverter->{serial});
     } else {
-        $productInverter->{systemData} = $systemData->{data};
+        $product_inverter->{systemData} = $system_data->{data};
     }
 
     if (!$meterData) {
-        Log(1, "_givEnergy_ProcessSiteProductInverter: Failed to get latest meter data for inverter - ".$productInverter->{serial});
+        Log($LL_ERROR, '_givEnergy_ProcessSiteProductInverter: Failed to get latest meter data for inverter - '.$product_inverter->{serial});
     } else {
-        $productInverter->{meterData} = $meterData->{data};
+        $product_inverter->{meterData} = $meter_data->{data};
     }
 
-    my $productInverterString = encode_json($productInverter);
-    Dispatch($hash, "GivEnergy_ProductInverter,".$productInverter->{serial}.",".$siteId.",".$productInverterString, undef);
+    my $product_inverter_string = encode_json($product_inverter);
+    Dispatch($hash, 'GivEnergy_ProductInverter,'.$product_inverter->{serial}.",${site_id},${product_inverter_string}", undef);
 
-	Log(1, "_givEnergy_ProcessSiteProductInverter: exit");
+	Log($LL_TRACE, '_givEnergy_ProcessSiteProductInverter: exit');
 }
 
 sub _givEnergy_ProcessSite($$$) {
-	my ($hash, $givEnergyClient, $site) = @_;
-	Log(1, "_givEnergy_ProcessSite: entry");
+	my ($hash, $givenergy_client, $site) = @_;
+	Log($LL_TRACE, '_givEnergy_ProcessSite: entry');
 
     # TODO: Do something with the site information!
 #        print("\nSite:          ".$site->{id}."\n");
@@ -145,33 +154,33 @@ sub _givEnergy_ProcessSite($$$) {
 
     foreach my $product (@{$site->{products}}) {
         if (lc($product->{name}) eq 'inverters') {
-            foreach my $productInverter (@{$product->{data}}) {
-                _givEnergy_ProcessSiteProductInverter($hash, $givEnergyClient, $site->{id}, $productInverter);
+            foreach my $product_inverter (@{$product->{data}}) {
+                _givEnergy_ProcessSiteProductInverter($hash, $givenergy_client, $site->{id}, $product_inverter);
             }
         } else {
             # TODO: what else could we get here, something else to process!
         }
     }
 
-	Log(1, "_givEnergy_ProcessSite: exit");
+	Log($LL_TRACE, '_givEnergy_ProcessSite: exit');
 }
 
 sub _givEnergy_ProcessSites($$) {
-	my ($hash, $givEnergyClient) = @_;
+	my ($hash, $givenergy_client) = @_;
 
-	Log(1, "_givEnergy_ProcessSites: entry");
+	Log($LL_TRACE, '_givEnergy_ProcessSites: entry');
 
     # Get all sites
-    my $respSites = $givEnergyClient->getSites();
-    if (!$respSites) {
-        Log(1, "_givEnergy_ProcessSites: Failed to get sites!");
+    my $resp_sites = $givenergy_client->getSites();
+    if (!$resp_sites) {
+        Log($LL_ERROR, '_givEnergy_ProcessSites: Failed to get sites!');
     } else {
-        foreach my $site (@{$respSites->{data}}) {
-            _givEnergy_ProcessSite($hash, $givEnergyClient, $site);
+        foreach my $site (@{$resp_sites->{data}}) {
+            _givEnergy_ProcessSite($hash, $givenergy_client, $site);
         }
     }
 
-	Log(1, "_givEnergy_ProcessSites: exit");
+	Log($LL_TRACE, '_givEnergy_ProcessSites: exit');
 }
 
 ############################################################################
@@ -179,28 +188,28 @@ sub _givEnergy_ProcessSites($$) {
 ############################################################################
 
 sub GivEnergy_UpdateNodes() {
-	my ($hash, $fromDefine) = @_;
+	my ($hash, $from_define) = @_;
 
-	Log(1, "GivEnergy_UpdateNodes: enter");
+	Log($LL_TRACE, 'GivEnergy_UpdateNodes: enter');
 
-	my $presence = "ABSENT";
+	my $presence = 'ABSENT';
 
-    my $givEnergyClient = _getGivEnergyInterface($hash);
-    if (!defined($givEnergyClient)) {
-		Log(1, "GivEnergy_UpdateNodes: Failed to create GivEnergy interface!");
+    my $givenergy_client = _getGivEnergyInterface($hash);
+    if (!defined($givenergy_client)) {
+		Log($LL_ERROR, 'GivEnergy_UpdateNodes: Failed to create GivEnergy interface!');
 		$hash->{STATE} = 'Disconnected';
     } else {
-		Log(4, "GivEnergy_UpdateNodes: Succesfully created GivEnergy interface");
-		$hash->{STATE} = "Connected";
+		Log($LL_DEBUG, 'GivEnergy_UpdateNodes: Succesfully created GivEnergy interface');
+		$hash->{STATE} = 'Connected';
 
         # TODO: Maybe get account information to show against the base node!
-#        $givEnergyClient->
+#        $givenergy_client->
 
-        _givEnergy_ProcessSites($hash, $givEnergyClient);
+        _givEnergy_ProcessSites($hash, $givenergy_client);
 
     }
 
-	Log(1, "GivEnergy_UpdateNodes: exit");
+	Log($LL_TRACE, '"GivEnergy_UpdateNodes: exit');
 }
 
 sub GivEnergy_Write($$$) {
@@ -208,17 +217,17 @@ sub GivEnergy_Write($$$) {
 
     # Extract the device command details from the args array.
     my $shash = shift(@args);
-    my $cmd = shift(@args);    
+    my $cmd = shift(@args);
 
     my $name = $shash->{NAME};
 
-    Log(1, "GivEnergy_Write: enter");
-    Log(4, "GivEnergy_Write: ${name} ${cmd} ".int(@args));
+    Log($LL_TRACE, 'GivEnergy_Write: enter');
+    Log($LL_DEBUG, "GivEnergy_Write: ${name} ${cmd} ".int(@args));
 
     my $ret = undef;
 
 
-    Log(1, "GivEnergy_Write: exit");
+    Log($LL_TRACE, 'GivEnergy_Write: exit');
 
     return $ret;
 }
